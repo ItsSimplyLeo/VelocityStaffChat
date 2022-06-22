@@ -19,6 +19,6 @@ dependencies {
 
 tasks {
     shadowJar {
-        relocate("net.kyori.adventure.text.minimessage", "cx.leo.velocity.staffchat.minimessage")
+        relocate("net.kyori", "cx.leo.velocity.staffchat.adventure")
     }
 }
