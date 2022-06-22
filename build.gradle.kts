@@ -1,8 +1,9 @@
 plugins {
     java
+    id("com.github.johnrengelman.shadow") version "7.1.0"
 }
 
-group = "org.example"
+group = "cx.leo"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -13,4 +14,11 @@ repositories {
 dependencies {
     compileOnly("com.velocitypowered:velocity-api:3.1.1")
     annotationProcessor("com.velocitypowered:velocity-api:3.1.1")
+    implementation("net.kyori:adventure-text-minimessage:4.11.0")
+}
+
+tasks {
+    shadowJar {
+        relocate("net.kyori.adventure.text.minimessage", "cx.leo.velocity.staffchat.minimessage")
+    }
 }

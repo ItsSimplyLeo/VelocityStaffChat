@@ -14,6 +14,8 @@ import com.velocitypowered.api.proxy.ServerConnection;
 import cx.leo.velocity.staffchat.listener.ChatListener;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -27,6 +29,8 @@ import java.util.UUID;
 
 @Plugin(id = "staffchat", name = "StaffChat", version = "1.0")
 public class VelocityStaffChat {
+
+    public static MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private final Set<UUID> toggledPlayers = new HashSet<>();
     private final ProxyServer server;
@@ -113,18 +117,24 @@ public class VelocityStaffChat {
         if (server == null) serverName = "N/A";
         else serverName = server.getServerInfo().getName();
 
-        this.server.getAllPlayers().stream().filter(player -> player.hasPermission("staffchat.use")).forEach(player -> player.sendMessage(Component.text()
-                .append(Component.text("[" + serverName + "]").color(NamedTextColor.YELLOW))
-                .append(Component.space())
-                .append(Component.text(displayName).color(NamedTextColor.WHITE))
-                .append(Component.text(": ").color(NamedTextColor.GRAY))
-                .append(Component.space())
-                .append(Component.text(message))));
+        this.server.getAllPlayers().stream().filter(player -> player.hasPermission("staffchat.use")).forEach(player -> player.sendMessage(
+                MINI_MESSAGE.deserialize(chatMessage,
+                        Placeholder.unparsed("server", serverName),
+                        Placeholder.unparsed("player", displayName),
+                        Placeholder.unparsed("message", message)
+                )
+        ));
     }
 
     public void toggle(Player player) {
         UUID uuid = player.getUniqueId();
-        if (toggledPlayers.contains(uuid)) toggledPlayers.remove(uuid);
-        else toggledPlayers.add(uuid);
+        if (toggledPlayers.contains(uuid)) {
+            toggledPlayers.remove(uuid);
+            player.sendMessage(MINI_MESSAGE.deserialize(toggleMessage, Placeholder.component("status", Component.text("disabled").color(NamedTextColor.RED))));
+        }
+        else {
+            toggledPlayers.add(uuid);
+            player.sendMessage(MINI_MESSAGE.deserialize(toggleMessage, Placeholder.component("status", Component.text("enabled").color(NamedTextColor.GREEN))));
+        }
     }
 }
