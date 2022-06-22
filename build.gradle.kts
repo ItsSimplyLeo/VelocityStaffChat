@@ -18,7 +18,11 @@ dependencies {
 }
 
 tasks {
+    build {
+        dependsOn(shadowJar)
+    }
+
     shadowJar {
-        relocate("net.kyori", "cx.leo.velocity.staffchat.adventure")
+        relocate("net.kyori.adventure.text.minimessage", "cx.leo.velocity.staffchat.adventure")
     }
 }
