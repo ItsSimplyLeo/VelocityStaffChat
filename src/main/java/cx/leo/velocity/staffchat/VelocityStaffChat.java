@@ -1,11 +1,13 @@
 package cx.leo.velocity.staffchat;
 
 import com.google.inject.Inject;
+import com.moandjiezana.toml.Toml;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
@@ -14,6 +16,11 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.slf4j.Logger;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -24,16 +31,30 @@ public class VelocityStaffChat {
     private final Set<UUID> toggledPlayers = new HashSet<>();
     private final ProxyServer server;
     private final Logger logger;
+    private final Path dataDirectory;
+
+    private String chatMessage;
+    private String toggleMessage;
+
+    private Toml config;
 
     @Inject
-    public VelocityStaffChat(ProxyServer server, Logger logger) {
+    public VelocityStaffChat(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
         this.server = server;
         this.logger = logger;
+        this.dataDirectory = dataDirectory;
     }
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
-        server.getEventManager().register(this, new ChatListener(this));
+        this.config = loadConfig(dataDirectory);
+        if (config == null) {
+            return; // TODO handle
+        }
+        this.chatMessage = config.getString("format");
+        this.toggleMessage = config.getString("toggle");
+
+        this.server.getEventManager().register(this, new ChatListener(this));
 
         CommandManager commandManager = server.getCommandManager();
         CommandMeta command = commandManager.metaBuilder("staffchat")
@@ -42,6 +63,29 @@ public class VelocityStaffChat {
                 .build();
 
         commandManager.register(command, new StaffChatCommand(this));
+    }
+
+    private Toml loadConfig(Path path) {
+        File folder = path.toFile();
+        File file = new File(folder, "config.toml");
+        if (!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
+
+        if (!file.exists()) {
+            try (InputStream input = getClass().getResourceAsStream("/" + file.getName())) {
+                if (input != null) {
+                    Files.copy(input, file.toPath());
+                } else {
+                    file.createNewFile();
+                }
+            } catch (IOException exception) {
+                exception.printStackTrace();
+                return null;
+            }
+        }
+
+        return new Toml().read(file);
     }
 
     public ProxyServer getServer() {

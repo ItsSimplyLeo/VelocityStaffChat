@@ -1,0 +1,2 @@
+format = "<red><bold>[SC]</bold> <yellow>[<server>] <white><player><gray>: <white><message>"
+toggle = "<yellow>Staff chat has been toggled to <status><yellow>."
